@@ -1,0 +1,36 @@
+proxyrack:
+  - host: "" # proxyrack ip
+    port-start: 0 # proxyrack start port
+    port-end: 0 # proxyrack end port
+debug:
+  mongo-user: test_user
+  mongo-password: test321
+  mongo-database: test_db
+  gin-hostport: "127.0.0.1:5000"
+prod:
+  mongo-user: prod_user
+  mongo-password: "insert mongo pwd here"
+  mongo-database: prod_db
+  gin-hostport: "0.0.0.0:5689"
+mongo-collection: proxies
+mongo-replicaset: replicaset
+mongo-hosts: "insert primary, secondary, arbiter mongohosts here"
+scrapers:
+  - name: ra
+  - name: wizz
+useproxyrack: no
+newproxies:
+  url: http://path.to.grab.proxies.in.txt
+  username: username
+  password: password
+schedulertimings:
+  loadProxies: 120
+  logStats: 60
+  returnPostponed: 3
+  saveToMongo: 70
+proxyrelated:
+  max-good-attempts: 25
+  backoff-time-for-good-attempts-attempts: 60
+  proxyrack-backoff-time: 180
+  remove-dead-deays: 1
+stats-filename: success_stats.csv
