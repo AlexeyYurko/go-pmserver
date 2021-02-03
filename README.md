@@ -34,9 +34,9 @@
 
 ### Scraper/spider names
 
-`ra` - for ryanair spider
+`ra`
 
-`wizz` - for wizzair spider
+`wizz`
 
 ### Local run
 
