@@ -48,7 +48,7 @@ type config struct {
 		MaxGoodAttempts            int32 `yaml:"max-good-attempts"`
 		BackoffTimeForGoodAttempts int64 `yaml:"backoff-time-for-good-attempts-attempts"`
 		ProxyRackBackoffTime       int64 `yaml:"proxyrack-backoff-time"`
-		RemoveDeadDays             int64 `yaml:"remove-dead-deays"`
+		RemoveDeadDays             int64 `yaml:"remove-dead-days"`
 	}
 	StatsFileName string `yaml:"stats-filename"`
 }

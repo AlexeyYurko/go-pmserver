@@ -32,5 +32,5 @@ proxyrelated:
   max-good-attempts: 25
   backoff-time-for-good-attempts-attempts: 60
   proxyrack-backoff-time: 180
-  remove-dead-deays: 1
+  remove-dead-days: 1
 stats-filename: success_stats.csv
