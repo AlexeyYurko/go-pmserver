@@ -1,11 +1,9 @@
 package config
 
 import (
-	"io/ioutil"
+	"gopkg.in/yaml.v2"
 	"log"
 	"os"
-
-	"gopkg.in/yaml.v2"
 )
 
 type config struct {
@@ -101,7 +99,7 @@ var (
 // ParseConfig to parse config.yml file
 func ParseConfig() {
 	var configFile = "config.yml"
-	data, err := ioutil.ReadFile(configFile)
+	data, err := os.ReadFile(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
