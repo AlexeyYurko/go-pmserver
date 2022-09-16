@@ -138,7 +138,7 @@ func HTMLStats() (output string) {
 
 // ProxyUsefulnessStatsToCSV output internal stats to CSV
 func ProxyUsefulnessStatsToCSV(scraper, orderBy string) {
-	var stats []statRecord
+	stats := make([]statRecord, 0)
 	for proxy, record := range db.Base.RangeScraper(scraper) {
 		lineRecord := statRecord{
 			Proxy:                  proxy,
@@ -203,7 +203,7 @@ func writeCSV(data []statRecord) {
 
 // GetStatsForTimeWithinBusyPostponed internal stats
 func GetStatsForTimeWithinBusyPostponed(scraper string) map[string]int64 {
-	var timeouts []int64
+	timeouts := make([]int64, 0)
 	currentTime := now.Time()
 	busyPostponed := db.Set.LoadBusyPostponed(scraper)
 	for _, proxy := range busyPostponed {

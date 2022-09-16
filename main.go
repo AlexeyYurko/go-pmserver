@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -16,8 +15,8 @@ import (
 	"github.com/AlexeyYurko/go-pmserver/db"
 	"github.com/AlexeyYurko/go-pmserver/manager"
 	"github.com/AlexeyYurko/go-pmserver/now"
+	"github.com/go-co-op/gocron"
 	"github.com/hashicorp/logutils"
-	"github.com/jasonlvhit/gocron"
 
 	"github.com/AlexeyYurko/go-pmserver/config"
 	stats "github.com/AlexeyYurko/go-pmserver/metrics"
@@ -66,15 +65,16 @@ func checkErrCron(err error, schedulerName string, timing uint64) {
 }
 
 func executeCronJob() {
-	err := gocron.Every(config.LoadProxiesTime).Seconds().Do(reloadProxies)
+	s := gocron.NewScheduler(time.UTC)
+	_, err := s.Every(config.LoadProxiesTime).Seconds().Do(reloadProxies)
 	checkErrCron(err, "reloadProxies", config.LoadProxiesTime)
-	err = gocron.Every(config.LogStatsTime).Seconds().Do(stats.LogStats)
+	_, err = s.Every(config.LogStatsTime).Seconds().Do(stats.LogStats)
 	checkErrCron(err, "logStats", config.LogStatsTime)
-	err = gocron.Every(config.ReturnPostponedTime).Seconds().Do(returnPostponedWithCondition)
+	_, err = s.Every(config.ReturnPostponedTime).Seconds().Do(returnPostponedWithCondition)
 	checkErrCron(err, "returnPostponedWithCondition", config.ReturnPostponedTime)
-	err = gocron.Every(config.SaveToMongoTime).Seconds().Do(db.Save)
+	_, err = s.Every(config.SaveToMongoTime).Seconds().Do(db.Save)
 	checkErrCron(err, "saveToMongo", config.SaveToMongoTime)
-	<-gocron.Start()
+	s.StartAsync()
 }
 
 func setupRouter() (r *gin.Engine) {
@@ -322,7 +322,7 @@ func reloadProxies() {
 }
 
 func loadProxiesFromWeb(resourceLink string) (proxies []string) {
-	req, err := http.NewRequest("GET", resourceLink, nil)
+	req, err := http.NewRequest("GET", resourceLink, http.NoBody)
 	if err != nil {
 		return
 	}
@@ -333,7 +333,7 @@ func loadProxiesFromWeb(resourceLink string) (proxies []string) {
 		return
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
