@@ -187,7 +187,7 @@ func changeMaxGoodAttempts(c *gin.Context) {
 		c.String(http.StatusForbidden, "Field numbers is empty")
 		return
 	}
-	maxAttempts, err := strconv.Atoi(numbers)
+	maxAttempts, err := strconv.ParseInt(numbers, 10, 32)
 	if err == nil {
 		log.Printf("[DEBUG] New max attempts value set to %d.\n", maxAttempts)
 		config.MaxGoodAttempts = int32(maxAttempts)
