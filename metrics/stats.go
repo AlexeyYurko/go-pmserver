@@ -13,7 +13,7 @@ import (
 	"github.com/AlexeyYurko/go-pmserver/config"
 	"github.com/AlexeyYurko/go-pmserver/db"
 	"github.com/AlexeyYurko/go-pmserver/now"
-	"github.com/jedib0t/go-pretty/table"
+	"github.com/jedib0t/go-pretty/v6/table"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rcrowley/go-metrics"
