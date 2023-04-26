@@ -1,10 +1,10 @@
 module github.com/AlexeyYurko/go-pmserver
 
-go 1.19
+go 1.20
 
 require (
 	github.com/gin-gonic/gin v1.9.0
-	github.com/go-co-op/gocron v1.19.0
+	github.com/go-co-op/gocron v1.23.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
