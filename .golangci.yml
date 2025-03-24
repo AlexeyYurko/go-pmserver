@@ -1,32 +1,32 @@
 version: "2"
 linters:
-  default: all
-#  enable:
-#    - bodyclose
-#    - depguard
-#    - dogsled
-#    - dupl
-#    - errcheck
-#    - funlen
-#    - gochecknoinits
-#    - goconst
-#    - gocritic
-#    - gocyclo
-#    - goprintffuncname
-#    - gosec
-#    - govet
-#    - ineffassign
-#    - lll
-#    - misspell
-#    - mnd
-#    - nakedret
-#    - prealloc
-#    - revive
-#    - staticcheck
-#    - unconvert
-#    - unparam
-#    - unused
-#    - whitespace
+  default: none
+  enable:
+    - bodyclose
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - goprintffuncname
+    - gosec
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - mnd
+    - nakedret
+    - prealloc
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
   settings:
     dupl:
       threshold: 100

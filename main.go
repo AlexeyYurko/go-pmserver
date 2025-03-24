@@ -41,7 +41,7 @@ func main() {
 	var file, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 
 	if err != nil {
-		fmt.Println("Could Not Open Log File : " + err.Error())
+		log.Println("Could not open log file:", err)
 	}
 
 	filter := &logutils.LevelFilter{
@@ -249,6 +249,7 @@ func getWorkingList(context *gin.Context) {
 	scraper := context.Query("scraper")
 	if scraper == "" {
 		context.String(http.StatusForbidden, "Field scraper is empty")
+
 		return
 	}
 
@@ -262,6 +263,7 @@ func getDeadList(context *gin.Context) {
 	scraper := context.Query("scraper")
 	if scraper == "" {
 		context.String(http.StatusForbidden, "Field scraper is empty")
+
 		return
 	}
 
@@ -282,6 +284,7 @@ func getProxyUsefulnessStats(context *gin.Context) {
 
 	if scraper == "" || !found {
 		context.String(http.StatusForbidden, "Field scraper is empty or wrong orderBy")
+
 		return
 	}
 
@@ -322,11 +325,13 @@ func routeAddProxies(context *gin.Context) {
 
 	if err != nil {
 		context.String(http.StatusForbidden, "Something went wrong")
+
 		return
 	}
 
 	if len(json.Proxies) == 0 {
 		context.String(http.StatusForbidden, "Empty proxies list")
+
 		return
 	}
 
@@ -348,11 +353,13 @@ func routeRemoveProxies(context *gin.Context) {
 
 	if err != nil {
 		context.String(http.StatusForbidden, "Something went wrong")
+
 		return
 	}
 
 	if len(json.Proxies) == 0 {
 		context.String(http.StatusForbidden, "Empty proxies list")
+
 		return
 	}
 
@@ -378,28 +385,28 @@ func reloadProxies() {
 
 func loadProxiesFromWeb(resourceLink string) ([]string, error) {
 	ctx := context.Background()
-	req, err := http.NewRequestWithContext(ctx, "GET", resourceLink, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, resourceLink, http.NoBody)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
 	req.SetBasicAuth(config.ProxyListUsername, config.ProxyListPassword)
-	cli := &http.Client{}
-	resp, err := cli.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	proxies := strings.Split(string(body), "\n")
+
 	return proxies, nil
 }
 
@@ -429,5 +436,6 @@ func find(slice []string, val string) bool {
 			return true
 		}
 	}
+
 	return false
 }
