@@ -1,9 +1,10 @@
 package manager
 
 import (
-	"log"
 	"math"
 	"math/rand"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/AlexeyYurko/go-pmserver/config"
 	"github.com/AlexeyYurko/go-pmserver/db"
@@ -17,7 +18,7 @@ var busyPostponeTimeoutCapSec float32 = 10.0
 func GetRandomProxy(scraper string) (randomProxy string, err error) {
 	if randomProxy, err = db.Set.GetRandomKey(scraper); err != nil {
 		db.TimeStatsForUnavailableProxies[scraper] = append(db.TimeStatsForUnavailableProxies[scraper], now.Time())
-		log.Printf("[INFO] [%s] there is no good/unchecked proxy available.\n", scraper)
+		log.Info().Str("scraper", scraper).Msg("there is no good/unchecked proxy available")
 	} else {
 		var timeForStartCounting int64
 		var newCounter int
@@ -68,16 +69,27 @@ func IncGoodAttempts(scraper, proxy string) {
 	localProxyGoodAttempts := db.Base.IncProxyGoodAttempts(scraper, proxy)
 	db.ProxySuccessUsageTimeForStats[scraper] = append(db.ProxySuccessUsageTimeForStats[scraper], now.Time()-db.Base.ProxyTime(scraper, proxy))
 	if localProxyGoodAttempts >= config.MaxGoodAttempts {
-		log.Printf("[DEBUG] [%s] %d good attempts. GOOD proxy <%s> moved to POSTPONED.\n", scraper, localProxyGoodAttempts, proxy)
+		log.Debug().
+			Str("scraper", scraper).
+			Int32("attempts", localProxyGoodAttempts).
+			Str("proxy", proxy).
+			Msg("good attempts. GOOD proxy moved to POSTPONED")
 		markPostponed(scraper, proxy)
 	} else {
-		log.Printf("[DEBUG] [%s] %d good attempts <%s>.\n", scraper, localProxyGoodAttempts, proxy)
+		log.Debug().
+			Str("scraper", scraper).
+			Int32("attempts", localProxyGoodAttempts).
+			Str("proxy", proxy).
+			Msg("good attempts")
 		markGood(scraper, proxy)
 	}
 }
 
 func markPostponed(scraper, proxy string) {
-	log.Printf("[DEBUG] [%s] GOOD proxy <%s> became POSTPONED.\n", scraper, proxy)
+	log.Debug().
+		Str("scraper", scraper).
+		Str("proxy", proxy).
+		Msg("GOOD proxy became POSTPONED")
 	nextCheck := now.Time() + config.BackoffTimeForGoodAttempts
 	db.Base.StoreNextCheck(scraper, proxy, nextCheck)
 	db.Set.Postponed(scraper, proxy)
@@ -85,12 +97,18 @@ func markPostponed(scraper, proxy string) {
 
 func markGood(scraper, proxy string) {
 	if db.Set.ProxyAlreadyGood(scraper, proxy) {
-		log.Printf("[DEBUG] [%s] proxy <%s> is always GOOD.\n", scraper, proxy)
+		log.Debug().
+			Str("scraper", scraper).
+			Str("proxy", proxy).
+			Msg("proxy is always GOOD")
 		return
 	}
 	db.Set.Good(scraper, proxy)
 	postponeReturnFromBusyToGood(scraper, proxy, false)
-	log.Printf("[DEBUG] [%s] proxy <%s> set to GOOD.\n", scraper, proxy)
+	log.Debug().
+		Str("scraper", scraper).
+		Str("proxy", proxy).
+		Msg("proxy set to GOOD")
 }
 
 // MarkDead increase bad proxy statistics and counter
@@ -102,7 +120,10 @@ func MarkDead(scraper, proxy string) {
 	db.Base.IncFailureAttempts(scraper, proxy)
 
 	if db.Set.ProxyAlreadyDead(scraper, proxy) {
-		log.Printf("[DEBUG] [%s] proxy <%s> already in DEAD.\n", scraper, proxy)
+		log.Debug().
+			Str("scraper", scraper).
+			Str("proxy", proxy).
+			Msg("proxy already in DEAD")
 		return
 	}
 	db.Set.Dead(scraper, proxy)
@@ -114,13 +135,18 @@ func MarkDead(scraper, proxy string) {
 		backOffTime = expBackoffFullJitter(int(db.Base.FailedAttempts(scraper, proxy)))
 	}
 	db.Base.StoreNextCheck(scraper, proxy, now.Time()+backOffTime)
-	log.Printf("[DEBUG] [%s] proxy <%s> is DEAD.\n", scraper, proxy)
+	log.Debug().
+		Str("scraper", scraper).
+		Str("proxy", proxy).
+		Msg("proxy is DEAD")
 }
 
 func reanimateDead(scraper string) {
 	var nReanimated int
 	deadProxies := db.Set.GetDead(scraper)
-	log.Printf("[INFO] Trying to reanimate %d dead proxies.\n", len(deadProxies))
+	log.Info().
+		Int("count", len(deadProxies)).
+		Msg("Trying to reanimate dead proxies")
 	for _, proxy := range deadProxies {
 		nextCheck := db.Base.LoadNextCheck(scraper, proxy)
 		if (nextCheck > 0) && (nextCheck <= now.Time()) {
@@ -129,7 +155,10 @@ func reanimateDead(scraper string) {
 		}
 	}
 	if nReanimated > 0 {
-		log.Printf("[INFO] [%s] %d proxies moved from 'dead' to 'unchecked'.\n", scraper, nReanimated)
+		log.Info().
+			Str("scraper", scraper).
+			Int("count", nReanimated).
+			Msg("proxies moved from 'dead' to 'unchecked'")
 	}
 }
 
@@ -150,7 +179,10 @@ func returnToGoodFromBusyAndPostponed(scraper string) {
 		}
 	}
 	if nReturned > 0 {
-		log.Printf("[INFO] [%s] %d proxies moved from 'busy' and 'postponed' to 'good'.\n", scraper, nReturned)
+		log.Info().
+			Str("scraper", scraper).
+			Int("count", nReturned).
+			Msg("proxies moved from 'busy' and 'postponed' to 'good'")
 	}
 }
 
@@ -170,7 +202,10 @@ func RemoveDeadProxiesForALongTime(scraper string) {
 
 	if nRemoved > 0 {
 		db.Base.RemoveProxies(scraper, deadList)
-		log.Printf("[INFO] [%s] %d proxies removed because they've been dead too long.\n", scraper, nRemoved)
+		log.Info().
+			Str("scraper", scraper).
+			Int("count", nRemoved).
+			Msg("proxies removed because they've been dead too long")
 	}
 }
 

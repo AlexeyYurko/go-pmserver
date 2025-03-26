@@ -3,20 +3,20 @@ package stats
 import (
 	"encoding/csv"
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"sort"
 	"strconv"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/rcrowley/go-metrics"
+	"github.com/rs/zerolog/log"
+
 	"github.com/AlexeyYurko/go-pmserver/config"
 	"github.com/AlexeyYurko/go-pmserver/db"
 	"github.com/AlexeyYurko/go-pmserver/now"
 	"github.com/jedib0t/go-pretty/v6/table"
-
-	"github.com/gin-gonic/gin"
-	"github.com/rcrowley/go-metrics"
 )
 
 const (
@@ -93,14 +93,20 @@ func LogStats() {
 		lines := makeProxiesNumbersData(scraper)
 		total := lines["all"]["total"]
 		if total == 0 {
-			log.Printf("[INFO] [%s] no data at all.", scraper)
+			log.Info().Str("scraper", scraper).Msg("no data at all")
 			continue
 		}
 		for _, proxyType := range proxyTypes {
 			for _, status := range toLogStatuses {
 				proxies := lines[proxyType][status]
 				proxiesPercent := float64(proxies) / float64(total) * 100
-				log.Printf("[INFO] [%s]-[%s]-[%s]-proxies %d, %.2f", scraper, proxyType, status, proxies, proxiesPercent)
+				log.Info().
+					Str("scraper", scraper).
+					Str("type", proxyType).
+					Str("status", status).
+					Int("proxies", proxies).
+					Float64("percent", proxiesPercent).
+					Msg("proxy stats")
 			}
 		}
 	}
@@ -117,7 +123,7 @@ func HTMLStats() (output string) {
 		lines := makeProxiesNumbersData(scraper)
 		total := lines["all"]["total"]
 		if total == 0 {
-			log.Printf("[%s] no data at all.\n", scraper)
+			log.Info().Str("scraper", scraper).Msg("no data at all")
 			continue
 		}
 		for _, status := range toLogStatuses {
@@ -182,7 +188,7 @@ func ProxyUsefulnessStatsToCSV(scraper, orderBy string) {
 func writeCSV(data []statRecord) {
 	file, err := os.Create(statsFilename)
 	if err != nil {
-		log.Fatal("Cannot create file", err)
+		log.Fatal().Err(err).Msg("Cannot create file")
 	}
 	defer file.Close()
 	writer := csv.NewWriter(file)

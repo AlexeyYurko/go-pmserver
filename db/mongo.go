@@ -2,12 +2,14 @@ package db
 
 import (
 	"context"
-	"log"
 
-	"github.com/AlexeyYurko/go-pmserver/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/rs/zerolog/log"
+
+	"github.com/AlexeyYurko/go-pmserver/config"
 )
 
 // Record structure
@@ -39,12 +41,12 @@ func Load() {
 	collection := client.Database(config.MongoDatabase).Collection(config.MongoCollection)
 	cur, err := collection.Find(context.TODO(), filter)
 	if err != nil {
-		log.Printf("[WARNING] Error on finding all the documents %s", err)
+		log.Warn().Err(err).Msg("Error on finding all the documents")
 		return
 	}
 
 	if err = cur.All(context.TODO(), &records); err != nil {
-		log.Printf("[WARNING] Error on grabbing all the documents %s", err)
+		log.Warn().Err(err).Msg("Error on grabbing all the documents")
 		return
 	}
 
@@ -85,7 +87,7 @@ func Load() {
 		Set.status(scraper, currentProxy, status)
 		counter++
 	}
-	log.Printf("[INFO] From MongoDB loaded %d records.", counter)
+	log.Info().Int("count", counter).Msg("From MongoDB loaded records")
 }
 
 func connectToMongo() (client *mongo.Client) {
@@ -95,16 +97,16 @@ func connectToMongo() (client *mongo.Client) {
 	// Connect to MongoDB
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Error on connecting to MongoDB")
 	}
 
 	// Check the connection
 	err = client.Ping(context.TODO(), nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Error on checking the connection to MongoDB")
 	}
 
-	log.Println("[DEBUG] Connection to MongoDB open.")
+	log.Info().Msg("Connection to MongoDB open.")
 	return
 }
 
@@ -112,9 +114,9 @@ func closeMongo(client *mongo.Client) {
 	err := client.Disconnect(context.TODO())
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Error on closing the connection to MongoDB")
 	}
-	log.Println("[DEBUG] Connection to MongoDB closed.")
+	log.Info().Msg("Connection to MongoDB closed.")
 }
 
 // Remove records from MongoDB
@@ -132,14 +134,14 @@ func Remove(scraper string, removedList []string) {
 	bulkOption := options.BulkWriteOptions{}
 	_, err := collection.BulkWrite(context.TODO(), operations, &bulkOption)
 	if err != nil {
-		log.Printf("[WARNING] %s", err)
+		log.Warn().Err(err).Msg("Error on removing records from MongoDB")
 		return
 	}
 }
 
 // Save to MongoDB
 func Save() {
-	log.Println("[DEBUG] Save to Mongo")
+	log.Info().Msg("Save to Mongo")
 	var records []Record
 	var operations []mongo.WriteModel
 
@@ -156,13 +158,13 @@ func Save() {
 	// setting cursor to find with filter
 	cur, err := collection.Find(context.TODO(), filter)
 	if err != nil {
-		log.Printf("[WARNING] Error on finding all the documents %s", err)
+		log.Warn().Err(err).Msg("Error on finding all the documents")
 		return
 	}
 
 	// load all records from mongodb to var records
 	if err = cur.All(context.TODO(), &records); err != nil {
-		log.Printf("[WARNING] Error on grabbing all the documents %s", err)
+		log.Warn().Err(err).Msg("Error on grabbing all the documents")
 		return
 	}
 
@@ -230,11 +232,11 @@ func Save() {
 	}
 	res, err := collection.BulkWrite(context.TODO(), operations)
 	if err != nil {
-		log.Printf("[WARNING] %s", err)
+		log.Warn().Err(err).Msg("Error on saving records to MongoDB")
 		return
 	}
-	log.Printf("[INFO] MongoDB: insert: %d, updated: %d.\n", res.InsertedCount, res.ModifiedCount)
-	log.Printf("[INFO] Inside counters: insert: %d, updated: %d.\n", newCounter, updateCounter)
+	log.Info().Int64("inserted", res.InsertedCount).Int64("updated", res.ModifiedCount).Msg("MongoDB: insert: updated")
+	log.Info().Int("insert", newCounter).Int("updated", updateCounter).Msg("Inside counters: insert: updated")
 }
 
 func getRecordsSavedInMongo(records []Record) (savedRecords recordsInMongo) {
