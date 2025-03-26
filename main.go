@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"sort"
@@ -12,15 +11,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AlexeyYurko/go-pmserver/db"
-	"github.com/AlexeyYurko/go-pmserver/manager"
-	"github.com/AlexeyYurko/go-pmserver/now"
+	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron"
-	"github.com/hashicorp/logutils"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/AlexeyYurko/go-pmserver/config"
+	"github.com/AlexeyYurko/go-pmserver/db"
+	"github.com/AlexeyYurko/go-pmserver/manager"
 	stats "github.com/AlexeyYurko/go-pmserver/metrics"
-	"github.com/gin-gonic/gin"
+	"github.com/AlexeyYurko/go-pmserver/now"
+)
+
+const (
+	filePermissions = 0o666 // rw-rw-rw-
+	hoursInDay      = 24
+	minsInHour      = 60
+	secsInMinute    = 60
 )
 
 func runSetup() {
@@ -38,35 +45,30 @@ func runSetup() {
 
 func main() {
 	var logFile = "/tmp/proxymanager.log"
-	var file, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-
+	file, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, filePermissions)
 	if err != nil {
-		log.Println("Could not open log file:", err)
+		log.Error().Err(err).Msg("Could not open log file")
 	}
 
-	filter := &logutils.LevelFilter{
-		Levels:   []logutils.LogLevel{"DEBUG", "WARN", "ERROR", "INFO"},
-		MinLevel: logutils.LogLevel("DEBUG"),
-		Writer:   io.MultiWriter(file, os.Stdout),
-	}
-	log.SetOutput(filter)
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	multi := zerolog.MultiLevelWriter(os.Stdout, file)
+	log.Logger = zerolog.New(multi).With().Timestamp().Logger()
 
 	runSetup()
 
 	router := setupRouter()
 	err = router.Run(config.GinHostPort)
-
 	if err != nil {
-		log.Fatal("Troubles with Gin Server")
+		log.Fatal().Err(err).Msg("Troubles with Gin Server")
 	}
 }
 
 func checkErrCron(err error, schedulerName string, timing uint64) {
 	if err != nil {
-		log.Fatal("Troubles with setting scheduler", schedulerName)
+		log.Fatal().Err(err).Msg("Troubles with setting scheduler")
 	}
 
-	log.Println("[DEBUG] schedule planned for", schedulerName, "function with period of", timing, "seconds.")
+	log.Info().Msgf("schedule planned for %s function with period of %d seconds.", schedulerName, timing)
 }
 
 func executeCronJob() {
@@ -197,8 +199,8 @@ func removeDays(context *gin.Context) {
 
 	daysInt64, err := strconv.ParseInt(days, 10, 64)
 	if err == nil {
-		log.Printf("[DEBUG] New clearance time set to %d days.\n", daysInt64)
-		config.RemoveDeadTime = daysInt64 * 24 * 60 * 60
+		log.Info().Msgf("New clearance time set to %d days.\n", daysInt64)
+		config.RemoveDeadTime = daysInt64 * hoursInDay * minsInHour * secsInMinute
 	}
 
 	context.String(http.StatusOK, "OK")
@@ -215,7 +217,7 @@ func changeMaxGoodAttempts(context *gin.Context) {
 	maxAttempts, err := strconv.ParseInt(numbers, 10, 32)
 
 	if err == nil {
-		log.Printf("[DEBUG] New max attempts value set to %d.\n", maxAttempts)
+		log.Info().Msgf("New max attempts value set to %d.\n", maxAttempts)
 		config.MaxGoodAttempts = int32(maxAttempts)
 	}
 
@@ -242,7 +244,7 @@ func reloadProxyList(c *gin.Context) {
 
 func start(c *gin.Context) {
 	scraper := c.Query("scraper")
-	log.Printf("[DEBUG] %s\n", scraper)
+	log.Info().Msgf("%s\n", scraper)
 }
 
 func getWorkingList(context *gin.Context) {
@@ -373,11 +375,11 @@ func reloadProxies() {
 
 	var scraperToAdd = ""
 
-	log.Println("[DEBUG] Reloading Proxies")
+	log.Info().Msg("Reloading Proxies")
 
 	proxies, err := loadProxiesFromWeb(config.ResourceLink)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("Error loading proxies")
 	}
 
 	db.StoreProxies(scraperToAdd, proxies)
@@ -420,7 +422,7 @@ func returnPostponedWithCondition() {
 		percentOfAvailableProxiesRest := float64(db.Set.AvailableSize(scraper)) / float64(sizeOfBusyAndPostponed)
 		lessThan5PercentOfAvailableProxiesRest := percentOfAvailableProxiesRest*100 < 5.0
 		percent := 100.0
-		log.Printf("[INFO] [%s] percent of available proxies from busy and postponed %.2f%%\n", scraper, percentOfAvailableProxiesRest*percent)
+		log.Info().Msgf("[%s] percent of available proxies from busy and postponed %.2f%%\n", scraper, percentOfAvailableProxiesRest*percent)
 
 		if lessThan5PercentOfAvailableProxiesRest || busyNotReturnedForMoreThan5Minutes {
 			manager.ReanimateProxies(scraper)

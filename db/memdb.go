@@ -1,9 +1,10 @@
 package db
 
 import (
-	"log"
 	"sync"
 	"sync/atomic"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/AlexeyYurko/go-pmserver/config"
 	"github.com/AlexeyYurko/go-pmserver/now"
@@ -90,7 +91,10 @@ func (c *localBase) ProxyNotInBase(scraper, proxy string) bool {
 	c.RLock()
 	defer c.RUnlock()
 	if _, ok := c.base[scraper][proxy]; !ok {
-		log.Printf("[DEBUG] [%s]: proxy %s was not found in proxy list.\n", scraper, proxy)
+		log.Debug().
+			Str("scraper", scraper).
+			Str("proxy", proxy).
+			Msg("proxy was not found in proxy list")
 		return true
 	}
 	return false
@@ -219,7 +223,7 @@ func (c *localBase) removeProxy(scraper, proxy string) {
 }
 
 func (c *localBase) AliveFromDead(scraper string) {
-	log.Printf("[DEBUG] [%s] Move all proxies from 'dead' to 'unchecked'.\n", scraper)
+	log.Debug().Str("scraper", scraper).Msg("Move all proxies from 'dead' to 'unchecked'")
 	for _, proxy := range Set.GetDead(scraper) {
 		c.Lock()
 		pInfo := c.base[scraper][proxy]
@@ -286,7 +290,7 @@ func StoreProxies(scraperToAdd string, proxyList []string) {
 		scrapersToAdd = append(scrapersToAdd, scraperToAdd)
 	}
 
-	log.Printf("[DEBUG] Loaded %d records.\n", len(proxyList))
+	log.Debug().Int("count", len(proxyList)).Msg("Loaded records")
 	proxyInfo := proxy{
 		Status:                 unchecked,
 		StartGetProxyTime:      0,
@@ -315,7 +319,7 @@ func StoreProxies(scraperToAdd string, proxyList []string) {
 			Set.Unchecked(scraper, currentProxy)
 			counter++
 		}
-		log.Printf("[DEBUG] To [%s] added new %d records.\n", scraper, counter)
+		log.Debug().Str("scraper", scraper).Int("count", counter).Msg("To added new records")
 	}
 }
 

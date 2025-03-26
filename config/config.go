@@ -1,9 +1,10 @@
 package config
 
 import (
-	"gopkg.in/yaml.v3"
-	"log"
 	"os"
+
+	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
 )
 
 type config struct {
@@ -101,11 +102,11 @@ func ParseConfig() {
 	var configFile = "config.yml"
 	data, err := os.ReadFile(configFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Error on reading config file")
 	}
 
 	if err = yaml.Unmarshal(data, &yamlConfig); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Error on unmarshalling config file")
 	}
 	ResourceLink = yamlConfig.Newproxies.ResourceLink
 	ProxyListUsername = yamlConfig.Newproxies.ProxyListUsername
