@@ -224,11 +224,11 @@ func getStats(timesList []int64) (statsTiming map[string]int64) {
 		statsTiming = map[string]int64{"max": 0, "min": 0, "mean": 0, "median": 0, "stdev": 0}
 		return
 	}
-	min, max := countMinMax(timesList)
+	mn, mx := countMinMax(timesList)
 	mean := countMean(timesList)
 	median := countMedian(timesList)
 	stdev := countStDev(timesList, mean)
-	statsTiming = map[string]int64{"max": max, "min": min, "mean": mean, "median": median, "stdev": stdev}
+	statsTiming = map[string]int64{"max": mx, "min": mn, "mean": mean, "median": median, "stdev": stdev}
 	return statsTiming
 }
 
@@ -242,18 +242,18 @@ func UnixTimeString(unixTime int64) string {
 	return unitTimeInRFC3339
 }
 
-func countMinMax(array []int64) (min, max int64) {
-	max = array[0]
-	min = array[0]
+func countMinMax(array []int64) (mn, mx int64) {
+	mx = array[0]
+	mn = array[0]
 	for _, value := range array {
-		if max < value {
-			max = value
+		if mx < value {
+			mx = value
 		}
-		if min > value {
-			min = value
+		if mn > value {
+			mn = value
 		}
 	}
-	return min, max
+	return mn, mx
 }
 
 func countMean(array []int64) (mean int64) {
