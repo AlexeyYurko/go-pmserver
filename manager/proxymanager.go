@@ -210,9 +210,9 @@ func RemoveDeadProxiesForALongTime(scraper string) {
 }
 
 func randomUniform(value float32) int64 {
-	min := 0.5 * value
-	max := 1.5 * value
-	number := min + (max - min)
+	mn := 0.5 * value
+	mx := 1.5 * value
+	number := mn + (mx - mn)
 	return int64(rand.Float32() * number)
 }
 
