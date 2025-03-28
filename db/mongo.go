@@ -30,6 +30,8 @@ type Record struct {
 
 type recordsInMongo map[string]map[string]bool
 
+const expectedSize = 10
+
 // Load initial load DB from MongoDB
 func Load() {
 	var records []Record
@@ -121,7 +123,7 @@ func closeMongo(client *mongo.Client) {
 
 // Remove records from MongoDB
 func Remove(scraper string, removedList []string) {
-	var operations []mongo.WriteModel
+	operations := make([]mongo.WriteModel, 0, expectedSize)
 
 	client := connectToMongo()
 	defer closeMongo(client)

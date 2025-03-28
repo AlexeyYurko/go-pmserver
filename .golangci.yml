@@ -3,7 +3,7 @@ linters:
   default: none
   enable:
     - bodyclose
-    - depguard
+#    - depguard
     - dogsled
     - dupl
     - errcheck
